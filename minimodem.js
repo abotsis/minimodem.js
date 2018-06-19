@@ -22,9 +22,9 @@ function Minimodem(ctx) {
     //Create graphic contexts if object have an graphic context
     if(ctx){
         this.graphNode = this.audioContext.createScriptProcessor(0, 1, 1);
-        this.graphContext = ctx
-        this.startSpectrogram()
-        this.graphNode.onaudioprocess = this.drawSpectrogram.bind(this)
+        //this.graphContext = ctx
+        //this.startSpectrogram()
+        //this.graphNode.onaudioprocess = this.drawSpectrogram.bind(this)
     }
 
     //Web API connections
@@ -34,22 +34,12 @@ function Minimodem(ctx) {
 
 //Creating spectrogram
 Minimodem.prototype.startSpectrogram = function () {
-    this.graphContext.font = "10px Arial";
-    this.graphContext.fillStyle = "#ffffff";
-    this.graphContext.textAlign = "end";
-    this.graphContext.textBaseline="middle";
-
-    //Axis labels
-    var axis = 10;
-    var nyq = this.audioContext.sampleRate/2;
-    var step = nyq/axis
-    for(i = 0; i<axis ; i++){
-        this.graphContext.fillText((nyq*(i)/(1000*axis)).toFixed(2) + " kHz", this.graphContext.canvas.width-1, this.graphContext.canvas.height*(i/axis));
-    }
 }
 
 //Drawing spectrogram
 Minimodem.prototype.drawSpectrogram = function () {
+}
+/*
     var array = new Float32Array(this.analyser.frequencyBinCount);
     this.analyser.getFloatFrequencyData(array);
 
@@ -78,6 +68,7 @@ Minimodem.prototype.drawSpectrogram = function () {
         this.graphContext.putImageData(imageData, 0, 0);
     }.bind(this));
 }
+*/
 
 //Transmit an data packet (it includes one or more channels and )
 Minimodem.prototype.transmit = function(data) {
@@ -116,20 +107,19 @@ Minimodem.prototype.transmit = function(data) {
 
 //Binary Frequency Shift Keying
 Minimodem.prototype.BFSK = function(data,period,sFreq,shift){
-    var data = this.dataToBin(data)
+    var mydata = ""
     var config = {"channels":1,"period":period};
     var rawData = [];
 
-    while(data.length % 1 != 0){
-        data += "0"
-    }
-    console.log("Converted data: " + data)
+    for (i = 0; i <= 100; i++) { mydata += "1"; }
+    mydata += this.dataToBin(data)
+    console.log("Aaron Converted data: " + mydata)
 
 
-    for (i = 0 ; i < data.length ; i++){
+    for (i = 0 ; i < mydata.length ; i++){
         var instant = [];
         for (channel = 0 ; channel < config["channels"] ; channel++){
-            if (data[i] == "0"){
+            if (mydata[i] == "0"){
                 var symbol = {"frequency":sFreq,"gain":1}
             }else{
                 var symbol = {"frequency":sFreq+shift,"gain":1}
@@ -198,12 +188,28 @@ Minimodem.prototype.BASK = function(data,period,sFreq){
     this.transmit({"config":config,"data":rawData})
 }
 
-//Auxiliar function to convert everything to binary stream
+//Aux function to convert everything to binary stream
+function stringToBinary(str, spaceSeparatedOctets) {
+    function zeroPad(num) {
+        return "00000000".slice(String(num).length) + num;
+    }
+
+    return str.replace(/[\s\S]/g, function(str) {
+        str = zeroPad(str.charCodeAt().toString(2));
+        return str;
+    });
+};
 Minimodem.prototype.dataToBin = function(t) {
-    var output="";
+    var output = "";
     var input= t;
     for (i=0; i < input.length; i++) {
-        output += input[i].charCodeAt(0).toString(2);
+        var binary="";
+        output += "0" 
+	binary += stringToBinary(input[i]).split("").reverse().join("");
+	//binary += input[i].charCodeAt(0).toString(2);
+	output += binary;
+	console.log(binary);
+	output += "1";
     }
     return output
 }
@@ -305,22 +311,22 @@ Minimodem.prototype.listen = function(){
 //Include microphone information in the system
 Minimodem.prototype.onStream = function(stream) {
     this.audioPlaying = true
-    this.micInput = this.audioContext.createMediaStreamSource(stream);
+    //this.micInput = this.audioContext.createMediaStreamSource(stream);
 
     //Antialias filter (is it working?)
-    this.antialias = this.audioContext.createBiquadFilter();
-    this.antialias.type = "lowpass"
-    this.antialias.frequency.value = this.audioContext.sampleRate/2;
+    //this.antialias = this.audioContext.createBiquadFilter();
+    //this.antialias.type = "lowpass"
+    //this.antialias.frequency.value = this.audioContext.sampleRate/2;
     //console.log("Antialias filter at " + this.audioContext.sampleRate/2000 + " kHz")
-    this.antialias.Q.value = 0;
+    //this.antialias.Q.value = 0;
 
     //Creating an receiver module
-    this.decodeNode = this.audioContext.createScriptProcessor(0, 1, 1);
-    this.decodeNode.onaudioprocess = this.receive.bind(this);
+    //this.decodeNode = this.audioContext.createScriptProcessor(0, 1, 1);
+    //this.decodeNode.onaudioprocess = this.receive.bind(this);
 
     //Web API connections
-    this.micInput.connect(this.antialias);
-    this.antialias.connect(this.analyser);
-    this.analyser.connect(this.decodeNode);
-    this.decodeNode.connect(this.audioContext.destination);
+    //this.micInput.connect(this.antialias);
+    //this.antialias.connect(this.analyser);
+    //this.analyser.connect(this.decodeNode);
+    //this.decodeNode.connect(this.audioContext.destination);
 };
